@@ -98,16 +98,12 @@ int main(int argc, char* argv[])
 	    	    delay.tv_sec = 0;
 	    	    delay.tv_nsec = 10;
 	    	    //nanosleep(&delay, NULL);
-		                      sleep(10); }
-			
+		                      sleep(10); }	
 if(NUM_LOOPS>=10)    {
 	    semctl(sem_set_id, 0, IPC_RMID, sem_val) ; // Remove the sem_set_id
-	    
 	    break;
-
 		}
 	}}
-    
     return 0;
 }
 ````
