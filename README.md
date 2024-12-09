@@ -21,6 +21,100 @@ Execute the C Program for the desired output.
 # PROGRAM:
 
 ## Write a C program that implements a producer-consumer system with two processes using Semaphores.
+
+Simplified:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/sem.h>
+#include <time.h>
+
+#define NUM_LOOPS 10
+
+union semun {
+    int val;
+    struct semid_ds *buf;
+    unsigned short *array;
+};
+
+int main() {
+    int sem_set_id;
+    union semun sem_val;
+    struct sembuf sem_op;
+    pid_t child_pid;
+
+    // Create semaphore
+    sem_set_id = semget(IPC_PRIVATE, 1, 0600);
+    if (sem_set_id == -1) {
+        perror("semget");
+        exit(1);
+    }
+
+    // Initialize semaphore to 0
+    sem_val.val = 0;
+    if (semctl(sem_set_id, 0, SETVAL, sem_val) == -1) {
+        perror("semctl");
+        exit(1);
+    }
+
+    // Fork to create producer and consumer
+    child_pid = fork();
+    if (child_pid == -1) {
+        perror("fork");
+        exit(1);
+    }
+
+    if (child_pid == 0) {  // Child process (Consumer)
+        for (int i = 0; i < NUM_LOOPS; i++) {
+            sem_op.sem_num = 0;
+            sem_op.sem_op = -1;  // Wait on semaphore
+            sem_op.sem_flg = 0;
+
+            if (semop(sem_set_id, &sem_op, 1) == -1) {
+                perror("semop");
+                exit(1);
+            }
+
+            printf("Consumer: '%d'\n", i);
+            fflush(stdout);
+        }
+        exit(0);
+    } else {  // Parent process (Producer)
+        for (int i = 0; i < NUM_LOOPS; i++) {
+            printf("Producer: '%d'\n", i);
+            fflush(stdout);
+
+            sem_op.sem_num = 0;
+            sem_op.sem_op = 1;  // Signal semaphore
+            sem_op.sem_flg = 0;
+
+            if (semop(sem_set_id, &sem_op, 1) == -1) {
+                perror("semop");
+                exit(1);
+            }
+
+            // Simulate some delay
+            usleep(100000);
+        }
+
+        // Wait for child process to finish
+        wait(NULL);
+
+        // Remove semaphore
+        if (semctl(sem_set_id, 0, IPC_RMID, sem_val) == -1) {
+            perror("semctl (IPC_RMID)");
+            exit(1);
+        }
+    }
+
+    return 0;
+}
+```
+
+Not so simplified:
+
 ```c
 /*
  * sem-producer-consumer.c  - demonstrates a basic producer-consumer
